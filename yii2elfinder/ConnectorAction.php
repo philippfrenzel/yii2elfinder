@@ -24,11 +24,11 @@ class ConnectorAction extends Action
     /**
      * @var array
      */
-    public $settings = array();
+    public $clientOptions = array();
 
     public function run()
     {
-        $fm = new elFinder($this->settings);
+        $fm = new elFinder($this->clientOptions);
         $fm->run();
 
     }
