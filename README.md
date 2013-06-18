@@ -26,7 +26,10 @@ Add this to your project index.php
 ```php
 
 Yii::setAlias('@yii2elfinder', __DIR__ . '/../vendor/philippfrenzel/yii2elfinder/yii2elfinder/');
-require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/connector.php');
+require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderConnector.class.php');
+require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinder.class.php');
+require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderVolumeDriver.class.php');
+require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderVolumeLocalFileSystem.class.php');
 
 ```
 
