@@ -13,6 +13,7 @@ return array(
 		'depends'=>array(
 			'yii/jquery',
 			'yii/jui/core',
+			'yii/jui/theme/base/core',
 		)
 	)
 );
