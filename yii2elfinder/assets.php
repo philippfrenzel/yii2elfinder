@@ -14,6 +14,7 @@ return array(
 			'yii/jquery',
 			'yii/jui/core',
 			'yii/jui/theme/base/core',
+			'yii/jui/resizable',
 		)
 	)
 );
