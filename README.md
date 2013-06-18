@@ -7,6 +7,20 @@ https://github.com/Studio-42/elFinder
 yii2elfinder
 ============
 
+How to install:
+
+Add this to your composer.json require section
+
+```json
+  "philippfrenzel/yii2elfinder": "dev-master",
+```
+
+Add this to your project index.php
+
+```php
+Yii::setAlias('@yii2elfinder', __DIR__ . '/../vendor/philippfrenzel/yii2elfinder/yii2elfinder/');
+Yii::$classMap['helios-ag\elFinder'] = __DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinder.class.php';
+```
 
 
 
