@@ -17,7 +17,7 @@ namespace yii2elfinder;
 use Yii;
 use \yii\base\Action;
 
-use \helios-ag\elFinder;
+use \heliosag\elFinder;
 
 class ConnectorAction extends Action
 {
