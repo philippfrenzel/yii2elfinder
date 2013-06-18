@@ -15,6 +15,7 @@ return array(
 			'yii/jui/core',
 			'yii/jui/theme/base/core',
 			'yii/jui/resizable',
+			'yii/jui/draggable',
 		)
 	)
 );
