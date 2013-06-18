@@ -17,6 +17,7 @@ namespace yii2elfinder;
 use Yii;
 use \yii\base\Action;
 
+use elFinder;
 use elFinderConnector;
 
 class ConnectorAction extends Action
@@ -28,7 +29,7 @@ class ConnectorAction extends Action
 
     public function run()
     {
-        $fm = new elFinderConnector($this->clientOptions);
+        $fm = new elFinderConnector(new elFinder($this->clientOptions));
         $fm->run();
 
     }
