@@ -24,8 +24,10 @@ Add this to your composer.json require section
 Add this to your project index.php
 
 ```php
+
 Yii::setAlias('@yii2elfinder', __DIR__ . '/../vendor/philippfrenzel/yii2elfinder/yii2elfinder/');
-Yii::$classMap['elFinderConnector'] = __DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderConnector.class.php';
+require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/connector.php');
+
 ```
 
 After that add into your controller the following function
