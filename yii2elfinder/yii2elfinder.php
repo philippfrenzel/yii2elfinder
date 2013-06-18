@@ -29,7 +29,7 @@ class yii2elfinder extends elWidget
     * If a value is null, the corresponding attribute will not be rendered.
     */
     public $options = array(
-        'class' => 'control-group',
+        'class' => 'elfinder',
     );
 
     /**
