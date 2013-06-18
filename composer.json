@@ -1,6 +1,6 @@
 {
 	"name": "philippfrenzel/yii2elfinder",
-	"description": "Yii2 DHTMLX Widgets",
+	"description": "Yii2 elfinder Widgets",
 	"keywords": ["yii", "framework","yii2 elfinder filemaneger"],
 	"homepage": "http://www.frenzel.net/",
 	"type": "library",
