@@ -9,6 +9,10 @@ return array(
 		),
 		'css' => array(
 			'css/elfinder.css',
+		),
+		'depends'=>array(
+			'yii/jquery',
+			'yii/jui/core',
 		)
 	)
 );
