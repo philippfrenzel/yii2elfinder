@@ -18,9 +18,9 @@ use yii\base\Model;
 use yii\base\View;
 use yii\helpers\Html;
 use yii\helpers\Json;
-use yii\base\Widget as BaseWidget;
+use yii\base\Widget as elWidget;
 
-class yii2elfinder extends BaseWidget
+class yii2elfinder extends elWidget
 {
 
     /**
@@ -65,7 +65,6 @@ class yii2elfinder extends BaseWidget
         $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);
 
         parent::init();
-
     }
 
     /**
