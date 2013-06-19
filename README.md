@@ -13,6 +13,8 @@ yii2elfinder
 Intro: The old version could not be used, as it's completly not working with the latest jquery version! So
 apart from the action, i had to change everything;)
 
+This extension allows you to integrate ElFinder file manager into your Yii web site's pages. Comparing with elfinder-widget extension this one is implemented with an attempt to provide a more flexible way to configure both ElFinder's client and connector. The extension also relies on the latest release of ElFinder 2.0-rc1 (10th of April, 2012).
+
 How to install:
 
 Add this to your composer.json require section
@@ -26,10 +28,6 @@ Add this to your project index.php
 ```php
 
 Yii::setAlias('@yii2elfinder', __DIR__ . '/../vendor/philippfrenzel/yii2elfinder/yii2elfinder/');
-require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderConnector.class.php');
-require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinder.class.php');
-require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderVolumeDriver.class.php');
-require_once(__DIR__ . '/../vendor/helios-ag/fm-elfinder/FM/elfinder/php/elFinderVolumeLocalFileSystem.class.php');
 
 ```
 
@@ -41,6 +39,17 @@ public function actions()
     return array(
       'connector' => array(
         'class' => 'yii2elfinder\ConnectorAction',
+        'clientOptions'=>array(
+          'locale' => '',
+          'debug'  => false,
+            'roots'  => array(
+                array(
+                    'driver' => 'LocalFileSystem',
+                    'path'   => dirname(__DIR__).'/../www/img/cms/',
+                    'URL'    => '',
+                )
+            )   
+        )
       )
     );
   }
