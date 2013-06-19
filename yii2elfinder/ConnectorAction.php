@@ -12,12 +12,12 @@
  * @author z_bodya
  */
 
+namespace yii2elfinder;
+
 require_once(__DIR__ . '/php/elFinderConnector.class.php');
 require_once(__DIR__ . '/php/elFinder.class.php');
 require_once(__DIR__ . '/php/elFinderVolumeDriver.class.php');
 require_once(__DIR__ . '/elFinderVolumeLocalFileSystem.class.php');
-
-namespace yii2elfinder;
 
 use Yii;
 use \yii\base\Action;
