@@ -22,7 +22,6 @@
 	},
 	"minimum-stability": "dev",
 	"require": {
-		"helios-ag/fm-elfinder": "dev-master",
 		"yiisoft/yii2": "*"
 	},
 	"autoload": {

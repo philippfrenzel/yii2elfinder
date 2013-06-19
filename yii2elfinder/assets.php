@@ -9,7 +9,8 @@ return array(
 		),
 		'css' => array(
 			'css/elfinder.min.css',
-			'css/theme.css'
+			'css/theme.css',
+			'css/smoothness/jquery-ui-1.10.3.custom.min.css'
 		),
 		'depends'=>array(
 			'yii/jquery',
