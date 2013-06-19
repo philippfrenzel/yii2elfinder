@@ -92,7 +92,7 @@ class yii2elfinder extends elWidget
         $js = array();
         
         $cleanOptions = Json::encode($this->clientOptions);
-        $js[] = "$('#$id').elfinder($cleanOptions);";
+        $js[] = "var elf = $('#$id').elfinder($cleanOptions).elfinder('instance');";
         
         $view->registerJs(implode("\n", $js),View::POS_READY);
     }
