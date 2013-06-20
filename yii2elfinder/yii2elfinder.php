@@ -58,7 +58,10 @@ class yii2elfinder extends elWidget
 
         // set required options
         if (empty($this->connectorRoute))
-            throw new CException('$connectorRoute must be set!');
+        {
+           echo "connectorRoute must be set!";
+           exit;
+        }
         $this->clientOptions['url'] = Html::url(array($this->connectorRoute));
         
         //fetch language from app
