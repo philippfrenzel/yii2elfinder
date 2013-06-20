@@ -44,6 +44,11 @@ class yii2elfinder extends elWidget
      * @var array the HTML attributes for the widget container tag.
      */
     public $connectorRoute = false;
+
+    /**
+     * @var array the HTML attributes for the widget container tag.
+     */
+    public $getFileCallback = '';
     
     /**
      * Initializes the widget.
@@ -95,7 +100,8 @@ class yii2elfinder extends elWidget
         $js = array();
         
         $cleanOptions = Json::encode($this->clientOptions);
-        $js[] = "var elf = $('#$id').elfinder($cleanOptions).elfinder('instance');";
+        $fileCallback = $this->getFileCallback;
+        $js[] = "var elf = $('#$id').elfinder($cleanOptions,getFileCallback : $fileCallback).elfinder('instance');";
         
         $view->registerJs(implode("\n", $js),View::POS_READY);
     }
