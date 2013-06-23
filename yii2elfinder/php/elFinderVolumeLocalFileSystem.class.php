@@ -25,6 +25,13 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 	protected $archiveSize = 0;
 	
 	/**
+	 * Canonicalized absolute pathname of $root
+	 * 
+	 * @var strung
+	 */
+	protected $aroot;
+	
+	/**
 	 * Constructor
 	 * Extend options with required fields
 	 *
@@ -37,6 +44,7 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 		$this->options['fileMode'] = 0644;            // new files mode
 		$this->options['quarantine'] = '.quarantine';  // quarantine folder name - required to check archive (must be hidden)
 		$this->options['maxArcFilesSize'] = 0;        // max allowed archive files size (0 - no limit)
+		$this->options['icon']     = (defined('ELFINDER_IMG_PARENT_URL')? (rtrim(ELFINDER_IMG_PARENT_URL, '/').'/') : '').'img/volume_icon_local.png';
 	}
 	
 	/*********************************************************************/
@@ -263,6 +271,15 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 			return $stat;
 		}
 
+		//Verifies the given path is the root or is inside the root. Prevents directory traveral.
+		if (!$this->aroot) {
+			// for Inheritance class ( not calling parent::configure() )
+			$this->aroot = realpath($this->root);
+		}
+		if (!$this->_inpath(realpath($path), $this->aroot)) {
+			return $stat;
+		}
+
 		if ($path != $this->root && is_link($path)) {
 			if (($target = $this->readlink($path)) == false 
 			|| $target == $path) {
@@ -320,7 +337,7 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 	
 	/**
 	 * Return object width and height
-	 * Ususaly used for images, but can be realize for video etc...
+	 * Usualy used for images, but can be realize for video etc...
 	 *
 	 * @param  string  $path  file path
 	 * @param  string  $mime  file mime type
@@ -518,10 +535,11 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 	 * @param  resource  $fp   file pointer
 	 * @param  string    $dir  target dir path
 	 * @param  string    $name file name
+	 * @param  array     $stat file stat (required by some virtual fs)
 	 * @return bool|string
 	 * @author Dmitry (dio) Levashov
 	 **/
-	protected function _save($fp, $dir, $name, $mime, $w, $h) {
+	protected function _save($fp, $dir, $name, $stat) {
 		$path = $dir.DIRECTORY_SEPARATOR.$name;
 
 		if (!($target = @fopen($path, 'wb'))) {
@@ -696,7 +714,7 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 			foreach (scandir($path) as $name) {
 				if ($name != '.' && $name != '..') {
 					$p = $path.DIRECTORY_SEPARATOR.$name;
-					if (is_link($p)) {
+					if (is_link($p) || !$this->nameAccepted($name)) {
 						return true;
 					}
 					if (is_dir($p) && $this->_findSymlinks($p)) {
@@ -707,6 +725,7 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 				}
 			}
 		} else {
+			
 			$this->archiveSize += filesize($path);
 		}
 		
@@ -741,7 +760,7 @@ class elFinderVolumeLocalFileSystem extends elFinderVolumeDriver {
 			
 			// extract in quarantine
 			$this->_unpack($archive, $arc);
-			@unlink($archive);
+			unlink($archive);
 			
 			// get files list
 			$ls = array();

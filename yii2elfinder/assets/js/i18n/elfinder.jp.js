@@ -1,13 +1,16 @@
 /**
  * Japanese translation
  * @author Tomoaki Yoshida <info@yoshida-studio.jp>
- * @version 2012-02-25
+ * @author Naoki Sawada <hypweb@gmail.com>
+ * @version 2013-05-20
  */
 if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object') {
 	elFinder.prototype.i18.jp = {
-		translator : 'Tomoaki Yoshida &lt;info@yoshida-studio.jp&gt;',
+		translator : 'Tomoaki Yoshida &lt;info@yoshida-studio.jp&gt;, Naoki Sawada &lt;hypweb@gmail.com&gt;',
 		language   : 'Japanese',
 		direction  : 'ltr',
+		dateFormat : 'Y/m/d h:i A', // 2012/04/11 05:27 PM
+		fancyDateFormat : '$1 h:i A', // will produce smth like: 今日 12:25 PM
 		messages   : {
 			
 			/********************************** errors **********************************/
@@ -68,12 +71,24 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'errArcType'           : 'サポート外のアーカイブ形式です',
 			'errNoArchive'         : 'アーカイブでないかサポートされていないアーカイブ形式です',
 			'errCmdNoSupport'      : 'サポートされていないコマンドです',
-			'errReplByChild'       : 'ホルダ "$1" に含まれてるアイテムを置き換えることはできません',
-			'errArcSymlinks'       : 'シンボリックリンクを含むアーカイブはセキュリティ上、解凍できません',
+			'errReplByChild'       : 'フォルダ "$1" に含まれてるアイテムを置き換えることはできません',
+			'errArcSymlinks'       : 'シンボリックリンクまたは許容されないファイル名を含むアーカイブはセキュリティ上、解凍できません', // edited 25.06.2012
 			'errArcMaxSize'        : 'アーカイブが許容されたサイズを超えています',
 			'errResize'            : '"$1"をリサイズできません',
 			'errUsupportType'      : 'このファイルタイプはサポートされません',
 			'errNotUTF8Content'    : 'ファイル "$1" には UTF-8 以外の文字が含まれているので編集できません',  // added 9.11.2011
+			'errNetMount'          : '"$1"をマウントできません', // added 17.04.2012
+			'errNetMountNoDriver'  : 'サポートされていないプロトコルです',     // added 17.04.2012
+			'errNetMountFailed'    : 'マウントに失敗しました',         // added 17.04.2012
+			'errNetMountHostReq'   : 'ホスト名は必須です', // added 18.04.2012
+			'errSessionExpires'    : 'アクションがなかったため、セッションが期限切れになりました',
+			'errCreatingTempDir'   : '一時ディレクトリを作成できません："$1"',
+			'errFtpDownloadFile'   : 'FTP からファイルをダウンロードできません："$1"',
+			'errFtpUploadFile'     : 'FTP へファイルをアップロードできません："$1"',
+			'errFtpMkdir'          : 'FTP にリモートディレクトリを作成できません："$1"',
+			'errArchiveExec'       : 'ファイルのアーカイブ中にエラーが発生しました："$1"',
+			'errExtractExec'       : 'ファイルの抽出中にエラーが発生しました："$1"',
+			'errNetUnMount'        : 'アンマウントできません', // added 30.04.2012
 			
 			/******************************* commands names ********************************/
 			'cmdarchive'   : 'アーカイブ作成',
@@ -103,6 +118,10 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'cmdview'      : 'ビュー',
 			'cmdresize'    : 'リサイズと回転',
 			'cmdsort'      : 'ソート',
+			'cmdnetmount'  : 'ネットワークボリュームをマウント', // added 18.04.2012
+			'cmdnetunmount': 'アンマウント', // added 30.04.2012
+
+			'cmdpixlr'     : 'Pixlr で編集',
 			
 			/*********************************** buttons ***********************************/ 
 			'btnClose'  : '閉じる',
@@ -112,27 +131,32 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'btnCancel' : 'キャンセル',
 			'btnNo'     : 'いいえ',
 			'btnYes'    : 'はい',
-			
+			'btnMount'  : 'マウント',  // added 18.04.2012
+			'btnApprove': '$1へ行き認可する', // added 26.04.2012
+			'btnUnmount': 'アンマウント', // added 30.04.2012
 			/******************************** notifications ********************************/
-			'ntfopen'     : 'フォルダーを開く',
-			'ntffile'     : 'ファイルを開く',
-			'ntfreload'   : 'フォルダーを再読込',
-			'ntfmkdir'    : 'ディレクトリーを作成',
-			'ntfmkfile'   : 'ファイルを作成',
-			'ntfrm'       : 'ファイルを削除',
-			'ntfcopy'     : 'ファイルをコピー',
-			'ntfmove'     : 'ファイルを移動',
-			'ntfprepare'  : 'ファイルコピーを準備',
-			'ntfrename'   : 'ファイル名を変更',
-			'ntfupload'   : 'ファイルをアップロード',
-			'ntfdownload' : 'ファイルをダウンロード',
-			'ntfsave'     : 'ファイルを保存',
-			'ntfarchive'  : 'アーカイブ作成',
-			'ntfextract'  : 'アーカイブを解凍',
-			'ntfsearch'   : 'ファイル検索',
+			'ntfopen'     : 'フォルダーを開いています',
+			'ntffile'     : 'ファイルを開いています',
+			'ntfreload'   : 'フォルダーを再読込しています',
+			'ntfmkdir'    : 'ディレクトリーを作成しています',
+			'ntfmkfile'   : 'ファイルを作成しています',
+			'ntfrm'       : 'ファイルを削除しています',
+			'ntfcopy'     : 'ファイルをコピーしています',
+			'ntfmove'     : 'ファイルを移動しています',
+			'ntfprepare'  : 'ファイルコピーを準備しています',
+			'ntfrename'   : 'ファイル名を変更しています',
+			'ntfupload'   : 'ファイルをアップロードしています',
+			'ntfdownload' : 'ファイルをダウンロードしています',
+			'ntfsave'     : 'ファイルを保存しています',
+			'ntfarchive'  : 'アーカイブ作成しています',
+			'ntfextract'  : 'アーカイブを解凍しています',
+			'ntfsearch'   : 'ファイル検索中',
 			'ntfresize'   : 'リサイズしています',
-			'ntfsmth'     : '何かしています >_<',
-			'ntfloadimg'  : 'Loading image',
+			'ntfsmth'     : '処理をしています',
+      		'ntfloadimg'  : 'イメージを読み込んでいます',
+      		'ntfnetmount' : 'ネットワークボリュームをマウントしています', // added 18.04.2012
+      		'ntfnetunmount': 'ネットワークボリュームをアンマウントしています', // added 30.04.2012
+			'ntfdim'      : '画像サイズを取得しています', // added 20.05.2013
 			
 			/************************************ dates **********************************/
 			'dateUnknown' : '不明',
@@ -152,14 +176,11 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'Dec'         : '12月',
 
 			/******************************** sort variants ********************************/
-			'sortnameDirsFirst' : '名前順 (フォルダ優先)', 
-			'sortkindDirsFirst' : '種類順 (フォルダ優先)', 
-			'sortsizeDirsFirst' : 'サイズ順 (フォルダ優先)', 
-			'sortdateDirsFirst' : '日付順 (フォルダ優先)', 
 			'sortname'          : '名前順', 
 			'sortkind'          : '種類順', 
 			'sortsize'          : 'サイズ順',
 			'sortdate'          : '日付順',
+			'sortFoldersFirst'  : 'フォルダ優先', // added 21.06.2012
 
 			/********************************** messages **********************************/
 			'confirmReq'      : '確認必須です',
@@ -201,7 +222,7 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'help'            : 'ヘルプ',
 			'webfm'           : 'ウェブファイルマネージャー',
 			'ver'             : 'バージョン',
-			'protocol'        : 'プロトコルバージョン',
+			'protocolver'     : 'プロトコルバージョン',
 			'homepage'        : 'プロジェクトホーム',
 			'docs'            : 'ドキュメンテーション',
 			'github'          : 'Github でフォーク',
@@ -217,6 +238,7 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'dontforget'      : 'タオル忘れちゃだめよー。',
 			'shortcutsof'     : 'ショートカットは利用できません',
 			'dropFiles'       : 'ここにファイルをドロップ',
+			'dropFilesBrowser': 'ブラウザからファイルをドロップまたは貼り付け', // added 30.05.2012
 			'or'              : 'または',
 			'selectForUpload' : 'アップロードするファイルを選択',
 			'moveFiles'       : 'ファイルを移動',
@@ -232,7 +254,14 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'rotate-cw'       : '90度左回転',
 			'rotate-ccw'      : '90度右回転',
 			'degree'          : '度',
-			
+			'netMountDialogTitle' : 'ネットワークボリュームのマウント', // added 18.04.2012
+			'protocol'            : 'プロトコル', // added 18.04.2012
+			'host'                : 'ホスト名', // added 18.04.2012
+			'port'                : 'ポート', // added 18.04.2012
+			'user'                : 'ユーザー名', // added 18.04.2012
+			'pass'                : 'パスワード', // added 18.04.2012
+			'confirmUnmount'      : '$1をアンマウントしますか?',  // added 30.04.2012
+
 			/********************************** mimetypes **********************************/
 			'kindUnknown'     : '不明',
 			'kindFolder'      : 'フォルダー',
