@@ -14,7 +14,6 @@ class CoreAsset extends AssetBundle
     public $sourcePath = '@yii2elfinder/assets';
     public $css = array(
         'css/elfinder.full.css',
-        'css/smoothness/jquery-ui-1.10.3.custom.css'
     );
     public $js = array(
         'js/elfinder.full.js',
