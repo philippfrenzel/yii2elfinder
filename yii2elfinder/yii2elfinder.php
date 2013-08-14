@@ -86,11 +86,15 @@ class yii2elfinder extends elWidget
     */
     protected function registerPlugin()
     {
-        $id = $this->options['id'];
+        //for the js object generation, the first letter needs to be in upper case
+        $name = ucfirst($name);
 
-        //get the displayed view and register the needed assets
+        $id = $this->options['id'];
         $view = $this->getView();
-        $view->registerAssetBundle("yii2elfinder/core");
+
+        /** @var \yii\web\AssetBundle $assetClass */
+        $assetClass = 'yii2elfinder\\CoreAsset';
+        $assetClass::register($view);
 
         $js = array();
         
