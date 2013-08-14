@@ -22,7 +22,7 @@ class CoreAsset extends AssetBundle
     );
     public $depends = array(
         'yii\jui\CoreAsset',
-        'yii\jui\CoreThemeAsset',
+        'yii\jui\ThemeAsset',
         'yii\jui\EffectAsset',
         'yii\jui\ResizableAsset',
         'yii\jui\DraggableAsset',
