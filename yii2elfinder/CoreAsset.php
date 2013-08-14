@@ -24,7 +24,7 @@ class CoreAsset extends AssetBundle
         'yii\jui\CoreAsset',
         'yii\jui\CoreThemeAsset',
         'yii\jui\EffectAsset',
-        'yii\jui\ResizableAsset'.
+        'yii\jui\ResizableAsset',
         'yii\jui\DraggableAsset',
         'yii\jui\DroppableAsset',
         'yii\jui\SelectableAsset'
