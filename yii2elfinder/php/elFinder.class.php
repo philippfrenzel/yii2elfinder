@@ -82,6 +82,13 @@ class elFinder {
 		);
 	
 	/**
+	 * Plugins instance
+	 *
+	 * @var array
+	 **/
+	protected $plugins = array();
+	
+	/**
 	 * Commands listeners
 	 *
 	 * @var array
@@ -210,8 +217,34 @@ class elFinder {
 
 		// bind events listeners
 		if (!empty($opts['bind']) && is_array($opts['bind'])) {
-			foreach ($opts['bind'] as $cmd => $handler) {
-				$this->bind($cmd, $handler);
+			$_req = $_SERVER["REQUEST_METHOD"] == 'POST' ? $_POST : $_GET;
+			$_reqCmd = isset($_req['cmd']) ? $_req['cmd'] : '';
+			foreach ($opts['bind'] as $cmd => $handlers) {
+				$doRegist = (strpos($cmd, '*') !== false);
+				if (! $doRegist) {
+					$_getcmd = create_function('$cmd', 'list($ret) = explode(\'.\', $cmd);return trim($ret);');
+					$doRegist = ($_reqCmd && in_array($_reqCmd, array_map($_getcmd, explode(' ', $cmd))));
+				}
+				if ($doRegist) {
+					if (! is_array($handlers) || is_object($handlers[0])) {
+						$handlers = array($handlers);
+					}
+					foreach($handlers as $handler) {
+						if ($handler) {
+							if (is_string($handler) && strpos($handler, '.')) {
+								list($_domain, $_name, $_method) = array_pad(explode('.', $handler), 3, '');
+								if (strcasecmp($_domain, 'plugin') === 0) {
+									if ($plugin = $this->getPluginInstance($_name, isset($opts['plugin'][$_name])? $opts['plugin'][$_name] : array())
+											and method_exists($plugin, $_method)) {
+										$this->bind($cmd, array($plugin, $_method));
+									}
+								}
+							} else {
+								$this->bind($cmd, $handler);
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -280,19 +313,33 @@ class elFinder {
 	 * @author Dmitry (dio) Levashov
 	 **/
 	public function bind($cmd, $handler) {
-		$cmds = $cmd == '*'
-			? array_keys($this->commands)
-			: array_map('trim', explode(' ', $cmd));
+		$allCmds = array_keys($this->commands);
+		$cmds = array();
+		foreach(explode(' ', $cmd) as $_cmd) {
+			if ($_cmd !== '') {
+				if ($all = strpos($_cmd, '*') !== false) {
+					list(, $sub) = array_pad(explode('.', $_cmd), 2, '');
+					if ($sub) {
+						$sub = str_replace('\'', '\\\'', $sub);
+						$addSub = create_function('$cmd', 'return $cmd . \'.\' . trim(\'' . $sub . '\');');
+						$cmds = array_merge($cmds, array_map($addSub, $allCmds));
+					} else {
+						$cmds = array_merge($cmds, $allCmds);
+					}
+				} else {
+					$cmds[] = $_cmd;
+				}
+			}
+		}
+		$cmds = array_unique($cmds);
 		
 		foreach ($cmds as $cmd) {
-			if ($cmd) {
-				if (!isset($this->listeners[$cmd])) {
-					$this->listeners[$cmd] = array();
-				}
+			if (!isset($this->listeners[$cmd])) {
+				$this->listeners[$cmd] = array();
+			}
 
-				if (is_callable($handler)) {
-					$this->listeners[$cmd][] = $handler;
-				}
+			if (is_callable($handler)) {
+				$this->listeners[$cmd][] = $handler;
 			}
 		}
 
@@ -381,6 +428,14 @@ class elFinder {
 		if (!empty($args['mimes']) && is_array($args['mimes'])) {
 			foreach ($this->volumes as $id => $v) {
 				$this->volumes[$id]->setMimesFilter($args['mimes']);
+			}
+		}
+		
+		// call pre handlers for this command
+		if (!empty($this->listeners[$cmd.'.pre'])) {
+			$volume = isset($args['target'])? $this->volume($args['target']) : false;
+			foreach ($this->listeners[$cmd.'.pre'] as $handler) {
+				call_user_func_array($handler, array($cmd, &$args, $this, $volume));
 			}
 		}
 		
@@ -478,6 +533,29 @@ class elFinder {
 		$_SESSION[$this->netVolumesSessionKey] = $volumes;
 	}
 
+	/**
+	 * Get plugin instance & set to $this->plugins
+	 * 
+	 * @param  string $name   Plugin name (dirctory name)
+	 * @param  array  $opts   Plugin options (optional)
+	 * @return object | bool Plugin object instance Or false
+	 * @author Naoki Sawada
+	 */
+	protected function getPluginInstance($name, $opts = array()) {
+		$key = strtolower($name);
+		if (! isset($this->plugins[$key])) {
+			$p_file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'plugins' . DIRECTORY_SEPARATOR . $name . DIRECTORY_SEPARATOR . 'plugin.php';
+			if (is_file($p_file)) {
+				require_once $p_file;
+				$class = 'elFinderPlugin' . $name;
+				$this->plugins[$key] = new $class($opts);
+			} else {
+				$this->plugins[$key] = false;
+			}
+		}
+		return $this->plugins[$key];
+	}
+
 	/***************************************************************************/
 	/*                                 commands                                */
 	/***************************************************************************/
@@ -508,11 +586,20 @@ class elFinder {
 		
 		if ($protocol === 'netunmount') {
 			if (isset($_SESSION) && is_array($_SESSION) && isset($_SESSION[$this->netVolumesSessionKey][$args['host']])) {
-				unset($_SESSION[$this->netVolumesSessionKey][$args['host']]);
-				return array('sync' => true);
-			} else {
-				return array('error' => $this->error(self::ERROR_NETUNMOUNT));
+				$res = true;
+				$netVolumes = $this->getNetVolumes();
+				$key = $args['host'];
+				$volume = $this->volume($args['user']);
+				if (method_exists($volume, 'netunmount')) {
+					$res = $volume->netunmount($netVolumes[$key]);
+				}
+				if ($res) {
+					unset($netVolumes[$key]);
+					$this->saveNetVolumes($netVolumes);
+					return array('sync' => true);
+				}
 			}
+			return array('error' => $this->error(self::ERROR_NETUNMOUNT));
 		}
 		
 		$driver   = isset(self::$netDrivers[$protocol]) ? self::$netDrivers[$protocol] : '';
@@ -556,7 +643,9 @@ class elFinder {
 			$options['netkey'] = $key;
 			$netVolumes[$key]  = $options;
 			$this->saveNetVolumes($netVolumes);
-			return array('sync' => true);
+			$rootstat = $volume->file($volume->root());
+			$rootstat['netkey'] = $key;
+			return array('added' => array($rootstat));
 		} else {
 			if (! $key = @ $volume->netMountKey) {
 				$key = md5($protocol . '-' . join('-', $options));
@@ -637,6 +726,7 @@ class elFinder {
 		if (!empty($args['init'])) {
 			$result['api'] = $this->version;
 			$result['uplMaxSize'] = ini_get('upload_max_filesize');
+			$result['uplMaxFile'] = ini_get('max_file_uploads');
 			$result['netDrivers'] = array_keys(self::$netDrivers);
 		}
 		
@@ -1165,6 +1255,14 @@ class elFinder {
 			}
 			
 			$tmpname = $files['tmp_name'][$i];
+			$path = ($paths && !empty($paths[$i]))? $paths[$i] : '';
+			
+			// do hook function 'upload.presave'
+			if (! empty($this->listeners['upload.presave'])) {
+				foreach($this->listeners['upload.presave'] as $handler) {
+					call_user_func_array($handler, array(&$path, &$name, $tmpname, $this, $volume));
+				}
+			}
 			
 			if (($fp = fopen($tmpname, 'rb')) == false) {
 				$result['warning'] = $this->error(self::ERROR_UPLOAD_FILE, $name, self::ERROR_UPLOAD_TRANSFER);
@@ -1175,8 +1273,8 @@ class elFinder {
 				}
 				break;
 			}
-			if ($paths && !empty($paths[$i])) {
-				$_target = $volume->getUploadTaget($target, $paths[$i], $result);
+			if ($path) {
+				$_target = $volume->getUploadTaget($target, $path, $result);
 			} else {
 				$_target = $target;
 			}

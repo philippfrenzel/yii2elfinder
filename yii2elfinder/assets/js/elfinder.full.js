@@ -1,9 +1,9 @@
 /*!
  * elFinder - file manager for web
- * Version 2.1_n (Nightly: b2fe800) (2013-06-23)
+ * Version 2.1_n (Nightly: e10911a) (2013-08-16)
  * http://elfinder.org
  * 
- * Copyright 2009-2012, Studio 42
+ * Copyright 2009-2013, Studio 42
  * Licensed under a 3 clauses BSD license
  */
 (function($) {
@@ -130,6 +130,7 @@ window.elFinder = function(node, opts) {
 			archives      : [],
 			extract       : [],
 			copyOverwrite : true,
+			uploadMaxSize : 0,
 			tmb           : false // old API
 		},
 		
@@ -856,6 +857,30 @@ window.elFinder = function(node, opts) {
 	}
 	
 	/**
+	 * Return bytes from ini formated size
+	 * 
+	 * @param  String  ini formated size
+	 * @return Integer
+	 */
+	this.returnBytes = function(val) {
+		if (val == '-1') val = 0;
+		if (val) {
+			// for ex. 1mb, 1KB
+			val = val.replace(/b$/i, '');
+			var last = val.charAt(val.length - 1).toLowerCase();
+			val = val.replace(/[gmk]$/i, '');
+			if (last == 'g') {
+				val = val * 1024 * 1024 * 1024;
+			} else if (last == 'm') {
+				val = val * 1024 * 1024;
+			} else if (last == 'k') {
+				val = val * 1024;
+			}
+		}
+		return val;
+	};
+	
+	/**
 	 * Proccess ajax request.
 	 * Fired events :
 	 * @todo
@@ -984,6 +1009,11 @@ window.elFinder = function(node, opts) {
 
 				if (response.netDrivers) {
 					self.netDrivers = response.netDrivers;
+				}
+
+				if (cmd == 'open' && !!data.init) {
+					self.uplMaxSize = self.returnBytes(response.uplMaxSize);
+					self.uplMaxFile = !!response.uplMaxFile? parseInt(response.uplMaxFile) : 20;
 				}
 
 				dfrd.resolve(response);
@@ -1573,6 +1603,10 @@ window.elFinder = function(node, opts) {
 		.change(function(e) {
 			$.each(e.data.changed||[], function(i, file) {
 				var hash = file.hash;
+				if ((files[hash].width && !file.width) || (files[hash].height && !file.height)) {
+					files[hash].width = undefined;
+					files[hash].height = undefined;
+				}
 				files[hash] = files[hash] ? $.extend(files[hash], file) : file;
 			});
 		})
@@ -1997,7 +2031,9 @@ elFinder.prototype = {
 	uploads : {
 		// check droped contents
 		checkFile : function(data, fm) {
-			if (data.type == 'data') {
+			if (!!data.checked || data.type == 'files') {
+				return data.files;
+			} else if (data.type == 'data') {
 				var dfrd = $.Deferred(),
 				files = [],
 				paths = [],
@@ -2105,8 +2141,6 @@ elFinder.prototype = {
 				}, 10);
 				
 				return dfrd.promise();
-			} else if (data.type == 'files') {
-				return data.files;
 			} else {
 				var ret = [];
 				var regex;
@@ -2248,12 +2282,13 @@ elFinder.prototype = {
 					})
 					.always(function() {
 						notifyto && clearTimeout(notifyto);
-						notify && self.notify({type : 'upload', cnt : -cnt, progress : 100*cnt});
+						! data.checked && notify && self.notify({type : 'upload', cnt : -cnt, progress : 100*cnt});
 					}),
 				xhr         = new XMLHttpRequest(),
 				formData    = new FormData(),
+				isDataType  = (data.type == 'data'),
 				files       = data.input ? data.input.files : self.uploads.checkFile(data, self), 
-				cnt         = files.length,
+				cnt         = data.checked? (isDataType? files[0].length : files.length) : files.length,
 				loaded      = 5,
 				notify      = false,
 				startNotify = function() {
@@ -2262,9 +2297,9 @@ elFinder.prototype = {
 						self.notify({type : 'upload', cnt : cnt, progress : loaded*cnt});
 					}, self.options.notifyDelay);
 				},
-				notifyto;
+				notifyto, notifyto2;
 			
-			if (data.type != 'data' &&!cnt) {
+			if (!isDataType && !cnt) {
 				return dfrd.reject();
 			}
 			
@@ -2309,18 +2344,78 @@ elFinder.prototype = {
 					// drop file from finder
 					// on first attempt request starts (progress callback called ones) but never ends.
 					// any next drop - successfull.
-					if (curr > 0 && !notifyto) {
+					if (!data.checked && curr > 0 && !notifyto) {
 						notifyto = startNotify();
 					}
 					
 					if (curr - prev > 4) {
 						loaded = curr;
-						notify && self.notify({type : 'upload', cnt : 0, progress : (loaded - prev)*cnt});
+						(data.checked || notify) && self.notify({type : 'upload', cnt : 0, progress : (loaded - prev)*cnt});
 					}
 				}
 			}, false);
 			
 			var send = function(files, paths){
+				var size = 0, fcnt = 1, sfiles = [], c = 0, total = cnt, maxFileSize;
+				if (! data.checked) {
+					maxFileSize = fm.option('uploadMaxSize')? fm.option('uploadMaxSize') : fm.uplMaxSize;
+					for (var i=0; i < files.length; i++) {
+						if (maxFileSize && files[i].size >= maxFileSize) {
+							self.error(self.i18n('errUploadFile', files[i].name) + ' ' + self.i18n('errUploadFileSize'));
+							continue;
+						}
+						if ((fm.uplMaxSize && size + files[i].size >= fm.uplMaxSize) || fcnt > fm.uplMaxFile) {
+							size = 0;
+							fcnt = 1;
+							c++;
+						}
+						if (typeof sfiles[c] == 'undefined') {
+							sfiles[c] = [];
+							if (isDataType) {
+								sfiles[c][0] = [];
+								sfiles[c][1] = [];
+							}
+						}
+						if (isDataType) {
+							sfiles[c][0].push(files[i]);
+							sfiles[c][1].push(paths[i]);
+						} else {
+							sfiles[c].push(files[i]);
+						}
+						size += files[i].size;
+						fcnt++;
+					}
+					
+					if (sfiles.length == 0) {
+						data.checked = true;
+						return false;
+					}
+					
+					if (sfiles.length > 1) {
+						notifyto = startNotify();
+						for (var i=0; i < sfiles.length; i++) {
+							fm.exec('upload', {type: data.type, files: sfiles[i], checked: true}).always(function() {
+								if (notify) {
+									var _cnt = (isDataType? this[0] : this).length;
+									total -= _cnt;
+									if (total < 1) {
+										notifyto && clearTimeout(notifyto);
+										self.notify({type : 'upload', cnt : -cnt, progress : 100 * cnt});
+									}
+								}
+							}.bind(sfiles[i]));
+						}
+						return false;
+					}
+					
+					if (isDataType) {
+						files = sfiles[0][0];
+						paths = sfiles[0][1];
+					} else {
+						files = sfiles[0];
+					}
+				}
+				
 				xhr.open('POST', self.uploadURL, true);
 				formData.append('cmd', 'upload');
 				formData.append(self.newAPI ? 'target' : 'current', self.cwd().hash);
@@ -2335,7 +2430,7 @@ elFinder.prototype = {
 					formData.append('upload[]', file);
 				});
 				
-				if (paths) {
+				if (isDataType) {
 					$.each(paths, function(i, path) {
 						formData.append('upload_path[]', path);
 					});
@@ -2350,20 +2445,33 @@ elFinder.prototype = {
 				}
 				
 				xhr.send(formData);
+				
+				return true;
 			};
 			
-			if (data.type != 'data') {
-				send(files);
-			} else {
-				files.done(function(result){
-					cnt = result[0].length;
-					send(result[0], result[1]);
-				}).fail(function(){
+			if (! isDataType) {
+				if (! send(files)) {
 					dfrd.reject();
-				});
+				}
+			} else {
+				if (!! data.checked) {
+					send(files[0], files[1]);
+				} else {
+					notifyto2 = setTimeout(function() {
+						self.notify({type : 'readdir', cnt : 1, hideCnt: true});
+					}, self.options.notifyDelay);
+					files.done(function(result){
+						notifyto2 && clearTimeout(notifyto2);
+						self.notify({type : 'readdir', cnt : -1});
+						cnt = result[0].length;
+						send(result[0], result[1]);
+					}).fail(function(){
+						dfrd.reject();
+					});
+				}
 			}
 
-			if (!this.UA.Safari || !data.files) {
+			if (!isDataType && !data.checked && (!this.UA.Safari || !data.files)) {
 				notifyto = startNotify();
 			}
 			
@@ -2621,7 +2729,7 @@ elFinder.prototype = {
 			notify   = ndialog.children('.elfinder-notify-'+type),
 			ntpl     = '<div class="elfinder-notify elfinder-notify-{type}"><span class="elfinder-dialog-icon elfinder-dialog-icon-{type}"/><span class="elfinder-notify-msg">{msg}</span> <span class="elfinder-notify-cnt"/><div class="elfinder-notify-progressbar"><div class="elfinder-notify-progress"/></div></div>',
 			delta    = opts.cnt,
-			progress = opts.progress >= 0 && opts.progress <= 100 ? opts.progress : 0,
+			progress = opts.progress >= 0 ? opts.progress : 0,
 			cnt, total, prc;
 
 		if (!type) {
@@ -2645,7 +2753,7 @@ elFinder.prototype = {
 			ndialog.is(':hidden') && ndialog.elfinderdialog('open');
 			notify.data('cnt', cnt);
 			
-			if (progress < 100
+			if (progress
 			&& (total = notify.data('total')) >= 0
 			&& (prc = notify.data('progress')) >= 0) {
 
@@ -3066,7 +3174,7 @@ elFinder.prototype = {
  *
  * @type String
  **/
-elFinder.prototype.version = '2.1_n (Nightly: b2fe800)';
+elFinder.prototype.version = '2.1_n (Nightly: e10911a)';
 
 
 
@@ -4267,7 +4375,7 @@ $.fn.dialogelfinder = function(opts) {
 /**
  * English translation
  * @author Troex Nevelin <troex@fury.scancode.ru>
- * @version 2013-05-20
+ * @version 2013-07-03
  */
 if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object') {
 	elFinder.prototype.i18.en = {
@@ -4340,6 +4448,10 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'errArcSymlinks'       : 'For security reason denied to unpack archives contains symlinks or files with not allowed names.', // edited 24.06.2012
 			'errArcMaxSize'        : 'Archive files exceeds maximum allowed size.',
 			'errResize'            : 'Unable to resize "$1".',
+			'errResizeDegree'      : 'Invalid rotate degree.',  // added 7.3.2013
+			'errResizeRotate'      : 'Image dose not rotated.',  // added 7.3.2013
+			'errResizeSize'        : 'Invalid image size.',  // added 7.3.2013
+			'errResizeNoChange'    : 'Image size not changed.',  // added 7.3.2013
 			'errUsupportType'      : 'Unsupported file type.',
 			'errNotUTF8Content'    : 'File "$1" is not in UTF-8 and cannot be edited.',  // added 9.11.2011
 			'errNetMount'          : 'Unable to mount "$1".', // added 17.04.2012
@@ -4422,6 +4534,7 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'ntfnetmount' : 'Mounting network volume', // added 18.04.2012
 			'ntfnetunmount': 'Unmounting network volume', // added 30.04.2012
 			'ntfdim'      : 'Acquiring image dimension', // added 20.05.2013
+			'ntfreaddir'  : 'Reading folder infomation', // added 01.07.2013
 			
 			/************************************ dates **********************************/
 			'dateUnknown' : 'unknown',
@@ -5971,7 +6084,6 @@ $.fn.elfinderdialog = function(opts) {
 					}
 				})
 				.bind('open', function() {
-					opts.modal && overlay.elfinderoverlay('show');
 					dialog.trigger('totop');
 					typeof(opts.open) == 'function' && $.proxy(opts.open, self[0])();
 
@@ -5998,7 +6110,7 @@ $.fn.elfinderdialog = function(opts) {
 					var dialogs = parent.find('.elfinder-dialog:visible'),
 						z = maxZIndex();
 					
-					opts.modal && overlay.elfinderoverlay('hide');
+					$(this).data('modal') && overlay.elfinderoverlay('hide');
 					
 					// get focus to next dialog
 					if (dialogs.length) {
@@ -6024,8 +6136,11 @@ $.fn.elfinderdialog = function(opts) {
 					}
 				})
 				.bind('totop', function() {
-					$(this).mousedown().find('.ui-button:first').focus().end().find(':text:first').focus()
-				}),
+					$(this).mousedown().find('.ui-button:first').focus().end().find(':text:first').focus();
+					$(this).data('modal') && overlay.elfinderoverlay('show');
+					overlay.zIndex($(this).zIndex());
+				})
+				.data({modal: opts.modal}),
 				maxZIndex = function() {
 					var z = parent.zIndex() + 10;
 					parent.find('.'+cldialog+':visible').each(function() {
@@ -8342,11 +8457,11 @@ elFinder.prototype.commands.getfile = function() {
 					.done(function(data) {
 						if (data.dim) {
 							var dim = data.dim.split('x');
-							var rfile = fm.file(file.hash);
-							rfile.width = file.width = dim[0];
-							rfile.height = file.height = dim[1];
+							var rfile = fm.file(this.hash);
+							rfile.width = this.width = dim[0];
+							rfile.height = this.height = dim[1];
 						}
-					}));
+					}.bind(file)));
 				}
 			}
 		}
@@ -8899,7 +9014,7 @@ elFinder.prototype.commands.netmount = function() {
 						return self.fm.trigger('error', {error : 'errNetMountHostReq'});
 					}
 
-					self.fm.request({data : data, notify : {type : 'netmount', cnt : 1}})
+					self.fm.request({data : data, notify : {type : 'netmount', cnt : 1, hideCnt : true}})
 						.done(function() { dfrd.resolve(); })
 						.fail(function(error) { dfrd.reject(error); });
 
@@ -8963,8 +9078,8 @@ elFinder.prototype.commands.netunmount = function() {
 					label    : 'btnUnmount',
 					callback : function() {  
 						fm.request({
-							data   : {cmd  : 'netmount', protocol : 'netunmount', host: drive.netkey, user : 'dum', pass : 'dum'}, 
-							notify : {type : 'netunmount', cnt : 1},
+							data   : {cmd  : 'netmount', protocol : 'netunmount', host: drive.netkey, user : drive.hash, pass : 'dum'}, 
+							notify : {type : 'netunmount', cnt : 1, hideCnt : true},
 							preventFail : true
 						})
 						.fail(function(error) {
@@ -10406,7 +10521,7 @@ elFinder.prototype.commands.resize = function() {
 	this.getstate = function() {
 		var sel = this.fm.selectedFiles();
 		return !this._disabled && sel.length == 1 && sel[0].read && sel[0].write && sel[0].mime.indexOf('image/') !== -1 ? 0 : -1;
-	}
+	};
 	
 	this.exec = function(hashes) {
 		var fm    = this.fm,
@@ -10441,12 +10556,11 @@ elFinder.prototype.commands.resize = function() {
 						})),
 					uiprop   = $('<span />'),
 					reset    = $('<div class="ui-state-default ui-corner-all elfinder-resize-reset"><span class="ui-icon ui-icon-arrowreturnthick-1-w"/></div>'),
-					//uitype   = $('<div class="elfinder-resize-type"><div class="elfinder-resize-label">'+fm.i18n('mode')+'</div></div>')
 					uitype   = $('<div class="elfinder-resize-type"/>')
-						.append('<input type="radio" name="type" id="type-resize" value="resize" checked="checked" /><label for="type-resize">'+fm.i18n('resize')+'</label>')
-						.append('<input type="radio" name="type" id="type-crop"   value="crop"/><label for="type-crop">'+fm.i18n('crop')+'</label>')
-						.append('<input type="radio" name="type" id="type-rotate" value="rotate"/><label for="type-rotate">'+fm.i18n('rotate')+'</label>'),
-					type     = $('input', uitype)
+						.append('<input type="radio" name="type" id="'+id+'-resize" value="resize" checked="checked" /><label for="'+id+'-resize">'+fm.i18n('resize')+'</label>')
+						.append('<input type="radio" name="type" id="'+id+'-crop" value="crop" /><label for="'+id+'-crop">'+fm.i18n('crop')+'</label>')
+						.append('<input type="radio" name="type" id="'+id+'-rotate" value="rotate" /><label for="'+id+'-rotate">'+fm.i18n('rotate')+'</label>'),
+					type     = $('input', uitype).attr('disabled', 'disabled')
 						.change(function() {
 							var val = $('input:checked', uitype).val();
 							
@@ -10483,7 +10597,7 @@ elFinder.prototype.commands.resize = function() {
 					width   = $(input)
 						.change(function() {
 							var w = parseInt(width.val()),
-								h = parseInt(cratio ? w/ratio : height.val());
+								h = parseInt(cratio ? Math.round(w/ratio) : height.val());
 
 							if (w > 0 && h > 0) {
 								resize.updateView(w, h);
@@ -10493,17 +10607,17 @@ elFinder.prototype.commands.resize = function() {
 					height  = $(input)
 						.change(function() {
 							var h = parseInt(height.val()),
-								w = parseInt(cratio ? h*ratio : width.val());
+								w = parseInt(cratio ? Math.round(h*ratio) : width.val());
 
 							if (w > 0 && h > 0) {
 								resize.updateView(w, h);
 								width.val(w);
 							}
 						}),
-					pointX  = $(input),
-					pointY  = $(input),
-					offsetX = $(input),
-					offsetY = $(input),
+					pointX  = $(input).change(function(){crop.updateView();}),
+					pointY  = $(input).change(function(){crop.updateView();}),
+					offsetX = $(input).change(function(){crop.updateView();}),
+					offsetY = $(input).change(function(){crop.updateView();}),
 					degree = $('<input type="text" size="3" maxlength="3" value="0" />')
 						.change(function() {
 							rotate.update();
@@ -10550,6 +10664,7 @@ elFinder.prototype.commands.resize = function() {
 							rwidth = owidth * r_scale;
 							rheight = oheight * r_scale;
 							
+							type.button('enable');
 							control.find('input,select').removeAttr('disabled')
 								.filter(':text').keydown(function(e) {
 									var c = e.keyCode, i;
@@ -10568,12 +10683,27 @@ elFinder.prototype.commands.resize = function() {
 										i = $(this).parent()[e.shiftKey ? 'prev' : 'next']('.elfinder-resize-row').children(':text');
 
 										if (i.length) {
-											i.focus()
+											i.focus();
+										} else {
+											$(this).parent().parent().find(':text:' + (e.shiftKey ? 'last' : 'first')).focus();
 										}
 									}
 								
 									if (c == 13) {
-										save()
+										fm.confirm({
+											title  : $('input:checked', uitype).val(),
+											text   : 'confirmReq',
+											accept : {
+												label    : 'btnApply',
+												callback : function() {  
+													save();
+												}
+											},
+											cancel : {
+												label    : 'btnCancel',
+												callback : function(){}
+											}
+										});
 										return;
 									}
 								
@@ -10602,23 +10732,25 @@ elFinder.prototype.commands.resize = function() {
 					},
 					resize = {
 						update : function() {
-							width.val(parseInt(img.width()/prop));
-							height.val(parseInt(img.height()/prop))
+							width.val(Math.round(img.width()/prop));
+							height.val(Math.round(img.height()/prop));
 						},
 						
 						updateView : function(w, h) {
 							if (w > pwidth || h > pheight) {
 								if (w / pwidth > h / pheight) {
-									img.width(pwidth).height(Math.ceil(img.width()/ratio));
+									prop = pwidth / w;
+									img.width(pwidth).height(Math.ceil(h*prop));
 								} else {
-									img.height(pheight).width(Math.ceil(img.height()*ratio));
+									prop = pheight / h;
+									img.height(pheight).width(Math.ceil(w*prop));
 								}
 							} else {
 								img.width(w).height(h);
 							}
 							
 							prop = img.width()/w;
-							uiprop.text('1 : '+(1/prop).toFixed(2))
+							uiprop.text('1 : '+(1/prop).toFixed(2));
 							resize.updateHandle();
 						},
 						
@@ -10629,7 +10761,7 @@ elFinder.prototype.commands.resize = function() {
 							var w, h;
 							if (cratio) {
 								h = height.val();
-								h = parseInt(h*ratio);
+								h = Math.round(h*ratio);
 								resize.updateView(w, h);
 								width.val(w);
 							}
@@ -10638,7 +10770,7 @@ elFinder.prototype.commands.resize = function() {
 							var w, h;
 							if (cratio) {
 								w = width.val();
-								h = parseInt(w/ratio);
+								h = Math.round(w/ratio);
 								resize.updateView(w, h);
 								height.val(h);
 							}
@@ -10646,15 +10778,32 @@ elFinder.prototype.commands.resize = function() {
 					},
 					crop = {
 						update : function() {
-							offsetX.val(parseInt(rhandlec.width()/prop));
-							offsetY.val(parseInt(rhandlec.height()/prop));
-							pointX.val(parseInt((rhandlec.offset().left-imgc.offset().left)/prop));
-							pointY.val(parseInt((rhandlec.offset().top-imgc.offset().top)/prop));
+							offsetX.val(Math.round((rhandlec.data('w')||rhandlec.width())/prop));
+							offsetY.val(Math.round((rhandlec.data('h')||rhandlec.height())/prop));
+							pointX.val(Math.round(((rhandlec.data('x')||rhandlec.offset().left)-imgc.offset().left)/prop));
+							pointY.val(Math.round(((rhandlec.data('y')||rhandlec.offset().top)-imgc.offset().top)/prop));
+						},
+						updateView : function() {
+							var x = parseInt(pointX.val()) * prop + imgc.offset().left;
+							var y = parseInt(pointY.val()) * prop + imgc.offset().top;
+							var w = offsetX.val() * prop;
+							var h = offsetY.val() * prop;
+							rhandlec.data({x: x, y: y, w: w, h: h});
+							rhandlec.width(Math.round(w));
+							rhandlec.height(Math.round(h));
+							coverc.width(rhandlec.width());
+							coverc.height(rhandlec.height());
+							rhandlec.offset({left: Math.round(x), top: Math.round(y)});
 						},
 						resize_update : function() {
+							rhandlec.data({w: null, h: null});
 							crop.update();
 							coverc.width(rhandlec.width());
 							coverc.height(rhandlec.height());
+						},
+						drag_update : function() {
+							rhandlec.data({x: null, y: null});
+							crop.update();
 						}
 					},
 					rotate = {
@@ -10797,7 +10946,7 @@ elFinder.prototype.commands.resize = function() {
 									.draggable({
 										handle      : coverc,
 										containment : imgc,
-										drag        : crop.update
+										drag        : crop.drag_update
 									});
 								
 								basec.show()
@@ -10827,7 +10976,7 @@ elFinder.prototype.commands.resize = function() {
 						var w, h, x, y, d;
 						var mode = $('input:checked', uitype).val();
 						
-						width.add(height).change();
+						//width.add(height).change(); // may be unnecessary
 						
 						if (mode == 'resize') {
 							w = parseInt(width.val()) || 0;
@@ -10931,7 +11080,7 @@ elFinder.prototype.commands.resize = function() {
 					.append('<div class="'+vline+' '+vline+'-right"/>')
 					.append('<div class="'+rpoint+' '+rpoint+'-e"/>')
 					.append('<div class="'+rpoint+' '+rpoint+'-se"/>')
-					.append('<div class="'+rpoint+' '+rpoint+'-s"/>')
+					.append('<div class="'+rpoint+' '+rpoint+'-s"/>');
 					
 				preview.append(spinner).append(rhandle.hide()).append(img.hide());
 
@@ -10947,7 +11096,7 @@ elFinder.prototype.commands.resize = function() {
 					.append('<div class="'+rpoint+' '+rpoint+'-ne"/>')
 					.append('<div class="'+rpoint+' '+rpoint+'-se"/>')
 					.append('<div class="'+rpoint+' '+rpoint+'-sw"/>')
-					.append('<div class="'+rpoint+' '+rpoint+'-nw"/>')
+					.append('<div class="'+rpoint+' '+rpoint+'-nw"/>');
 
 				preview.append(basec.css('position', 'absolute').hide().append(imgc).append(rhandlec.append(coverc)));
 				
@@ -10957,8 +11106,8 @@ elFinder.prototype.commands.resize = function() {
 				
 				dialog.append(preview).append(control);
 				
-				buttons[fm.i18n('btnCancel')] = function() { dialog.elfinderdialog('close'); };
 				buttons[fm.i18n('btnApply')] = save;
+				buttons[fm.i18n('btnCancel')] = function() { dialog.elfinderdialog('close'); };
 				
 				fm.dialog(dialog, {
 					title          : file.name,
@@ -11016,7 +11165,7 @@ elFinder.prototype.commands.resize = function() {
 		open(files[0], id);
 			
 		return dfrd;
-	}
+	};
 
 };
 
