@@ -48,6 +48,5 @@ class ConnectorAction extends Action
     {
         $fm = new elFinderConnector(new elFinder($this->clientOptions));
         $fm->run();
-
     }
 }
