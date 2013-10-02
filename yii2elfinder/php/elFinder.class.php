@@ -26,7 +26,13 @@ class elFinder {
 	protected $volumes = array();
 	
 	public static $netDrivers = array();
-
+	
+	/**
+	 * Session key of net mount volumes
+	 * @var string
+	 */
+	protected $netVolumesSessionKey = '';
+	
 	/**
 	 * Mounted volumes count
 	 * Required to create unique volume id
@@ -70,8 +76,10 @@ class elFinder {
 		'info'      => array('targets' => true),
 		'dim'       => array('target' => true),
 		'resize'    => array('target' => true, 'width' => true, 'height' => true, 'mode' => false, 'x' => false, 'y' => false, 'degree' => false),
-		'netmount'  => array('protocol' => true, 'host' => true, 'path' => false, 'port' => false, 'user' => true, 'pass' => true, 'alias' => false, 'options' => false)
-	);
+		'netmount'  => array('protocol' => true, 'host' => true, 'path' => false, 'port' => false, 'user' => true, 'pass' => true, 'alias' => false, 'options' => false),
+		'url'       => array('target' => true, 'options' => false),
+		'pixlr'     => array('target' => false, 'node' => false, 'image' => false, 'type' => false, 'title' => false)
+		);
 	
 	/**
 	 * Plugins instance
@@ -175,6 +183,7 @@ class elFinder {
 	const ERROR_UNSUPPORT_TYPE    = 'errUsupportType';
 	const ERROR_NOT_UTF8_CONTENT  = 'errNotUTF8Content';
 	const ERROR_NETMOUNT          = 'errNetMount';
+	const ERROR_NETUNMOUNT        = 'errNetUnMount';
 	const ERROR_NETMOUNT_NO_DRIVER = 'errNetMountNoDriver';
 	const ERROR_NETMOUNT_FAILED       = 'errNetMountFailed';
 
@@ -202,6 +211,7 @@ class elFinder {
 		$this->time  = $this->utime();
 		$this->debug = (isset($opts['debug']) && $opts['debug'] ? true : false);
 		$this->timeout = (isset($opts['timeout']) ? $opts['timeout'] : 0);
+		$this->netVolumesSessionKey = !empty($opts['netVolumesSessionKey'])? $opts['netVolumesSessionKey'] : 'elFinderNetVolumes';
 		
 		setlocale(LC_ALL, !empty($opts['locale']) ? $opts['locale'] : 'en_US.UTF-8');
 
@@ -509,7 +519,7 @@ class elFinder {
 	 * @author Dmitry (dio) Levashov
 	 */
 	protected function getNetVolumes() {
-		return isset($_SESSION['elFinderNetVolumes']) && is_array($_SESSION['elFinderNetVolumes']) ? $_SESSION['elFinderNetVolumes'] : array();
+		return isset($_SESSION[$this->netVolumesSessionKey]) && is_array($_SESSION[$this->netVolumesSessionKey]) ? $_SESSION[$this->netVolumesSessionKey] : array();
 	}
 
 	/**
@@ -520,7 +530,7 @@ class elFinder {
 	 * @author Dmitry (dio) Levashov
 	 */
 	protected function saveNetVolumes($volumes) {
-		$_SESSION['elFinderNetVolumes'] = $volumes;
+		$_SESSION[$this->netVolumesSessionKey] = $volumes;
 	}
 
 	/**
@@ -573,10 +583,29 @@ class elFinder {
 	protected function netmount($args) {
 		$options  = array();
 		$protocol = $args['protocol'];
-		$driver   = isset(self::$netDrivers[$protocol]) ? $protocol : '';
-		$class    = 'elfindervolume'.$protocol;
+		
+		if ($protocol === 'netunmount') {
+			if (isset($_SESSION) && is_array($_SESSION) && isset($_SESSION[$this->netVolumesSessionKey][$args['host']])) {
+				$res = true;
+				$netVolumes = $this->getNetVolumes();
+				$key = $args['host'];
+				$volume = $this->volume($args['user']);
+				if (method_exists($volume, 'netunmount')) {
+					$res = $volume->netunmount($netVolumes[$key]);
+				}
+				if ($res) {
+					unset($netVolumes[$key]);
+					$this->saveNetVolumes($netVolumes);
+					return array('sync' => true);
+				}
+			}
+			return array('error' => $this->error(self::ERROR_NETUNMOUNT));
+		}
+		
+		$driver   = isset(self::$netDrivers[$protocol]) ? self::$netDrivers[$protocol] : '';
+		$class    = 'elfindervolume'.$driver;
 
-		if (!$driver) {
+		if (!class_exists($class)) {
 			return array('error' => $this->error(self::ERROR_NETMOUNT, $args['host'], self::ERROR_NETMOUNT_NO_DRIVER));
 		}
 
@@ -597,15 +626,34 @@ class elFinder {
 		}
 
 		$volume = new $class();
-
+		
+		if (method_exists($volume, 'netmountPrepare')) {
+			$options = $volume->netmountPrepare($options);
+			if (isset($options['exit'])) {
+				return $options;
+			}
+		}
+		
+		$netVolumes = $this->getNetVolumes();
 		if ($volume->mount($options)) {
-			$netVolumes        = $this->getNetVolumes();
+			if (! $key = @ $volume->netMountKey) {
+				$key = md5($protocol . '-' . join('-', $options));
+			}
 			$options['driver'] = $driver;
-			$netVolumes[]      = $options;
-			$netVolumes        = array_unique($netVolumes);
+			$options['netkey'] = $key;
+			$netVolumes[$key]  = $options;
 			$this->saveNetVolumes($netVolumes);
-			return array('sync' => true);
+			$rootstat = $volume->file($volume->root());
+			$rootstat['netkey'] = $key;
+			return array('added' => array($rootstat));
 		} else {
+			if (! $key = @ $volume->netMountKey) {
+				$key = md5($protocol . '-' . join('-', $options));
+			}
+			if (isset($netVolumes[$key])) {
+				unset($netVolumes[$key]);
+				$this->saveNetVolumes($netVolumes);
+			}
 			return array('error' => $this->error(self::ERROR_NETMOUNT, $args['host'], implode(' ', $volume->error())));
 		}
 
@@ -1490,6 +1538,64 @@ class elFinder {
 			: array('error' => $this->error(self::ERROR_RESIZE, $volume->path($target), $volume->error()));
 	}
 	
+	/**
+	* Return content URL
+	*
+	* @param  array  $args  command arguments
+	* @return array
+	* @author Naoki Sawada
+	**/
+	protected function url($args) {
+		$target = $args['target'];
+		$options = isset($args['options'])? $args['options'] : array();
+		if (($volume = $this->volume($target)) != false) {
+			$url = $volume->getContentUrl($target, $options);
+			return $url ? array('url' => $url) : array();
+		}
+		return array();
+	}
+
+	/**
+	 * Edit on Pixlr.com
+	 *
+	 * @param  array  command arguments
+	 * @return array
+	 * @author Naoki Sawada
+	 **/
+	 protected function pixlr($args) {
+		
+	 	if (! empty($args['target'])) {
+		 	$args['upload'] = array( $args['image'] );
+			$args['name']   = array( preg_replace('/\.[a-z]{1,4}$/i', '', $args['title']).'.'.$args['type'] );
+		
+			$res = $this->upload($args);
+			$script = '
+				var elf=window.opener.document.getElementById(\''.htmlspecialchars($args['node'], ENT_QUOTES, 'UTF-8').'\').elfinder;
+				var data = '.json_encode($res).';
+				data.warning && elf.error(data.warning);
+				data.added && data.added.length && elf.add(data);
+				elf.trigger(\'upload\', data);
+				window.close();';
+	 	} else {
+	 		$script = 'window.close();';
+	 	}
+	 	$out = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><script>'.$script.'</script></head><body><a href="#" onlick="window.close();return false;">Close this window</a></body></html>';
+	 	
+	 	while( ob_get_level() ) {
+			if (! ob_end_clean()) {
+				break;
+			}
+		}
+	 	
+	 	header('Content-Type: text/html; charset=utf-8');
+	 	header('Content-Length: '.strlen($out));
+	 	header('Cache-Control: private');
+	 	header('Pragma: no-cache');
+	 	echo $out;
+	 	
+		exit();
+	}
+
 	/***************************************************************************/
 	/*                                   utils                                 */
 	/***************************************************************************/
