@@ -16,6 +16,8 @@ namespace yii2elfinder;
 
 // error_reporting(0);
 ini_set('max_file_uploads', 50); // allow uploading up to 50 files at once
+ini_set('upload_max_filesize','5MB');
+ini_set('post_max_size','5MB');
 
 // needed for case insensitive search to work, due to broken UTF-8 support in PHP
 ini_set('mbstring.internal_encoding', 'UTF-8');
