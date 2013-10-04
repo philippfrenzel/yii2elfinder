@@ -66,16 +66,17 @@ class yii2elfinder extends elWidget
         
         //fetch language from app
         $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);
-
-
-        if(Yii::$app->getRequest()->enableCsrfValidation) 
-        {
-            $view = $this->getView();
-
-            $csrfTokenName = Yii::$app->request->csrfVar;
-            $csrfToken = Yii::$app->request->getCsrfToken();
-            $view->registerMetaTag($csrfToken, 'csrf-token');
-            $view->registerMetaTag($csrfTokenName, 'csrf-param');
+        
+        $request = Yii::$app->getRequest();
+        
+        if ($request instanceof Request) {
+            if ($request->enableCsrfValidation) {
+                $view = $this->getView();
+                $csrfTokenName = array('name' => 'csrf-var', 'content' => $request->csrfVar);
+                $csrfToken = array('name' => 'csrf-token', 'content' => $request->getCsrfToken());
+                $view->registerMetaTag($csrfToken, 'csrf-token');
+                $view->registerMetaTag($csrfTokenName, 'csrf-var');
+            }
         }
 
         parent::init();
