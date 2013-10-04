@@ -47,7 +47,7 @@ class ConnectorAction extends Action
     public $clientOptions = array();
 
     public function run()
-    {
+    {   
         $fm = new elFinderConnector(new elFinder($this->clientOptions));
         $fm->run();
     }
