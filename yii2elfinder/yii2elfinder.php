@@ -71,9 +71,9 @@ class yii2elfinder extends elWidget
         if(Yii::$app->getRequest()->enableCsrfValidation) 
         {
             $view = $this->getView();
-            
-            $csrfTokenName = Yii::$app->request->csrfTokenName;
-            $csrfToken = Yii::$app->request->csrfToken;
+
+            $csrfTokenName = Yii::$app->request->csrfVar;
+            $csrfToken = Yii::$app->request->getCsrfToken();
             $view->registerMetaTag($csrfToken, 'csrf-token');
             $view->registerMetaTag($csrfTokenName, 'csrf-param');
         }
