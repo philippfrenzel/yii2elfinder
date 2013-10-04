@@ -23,14 +23,6 @@ Add this to your composer.json require section
   "philippfrenzel/yii2elfinder": "dev-master",
 ```
 
-Add this to your project index.php
-
-```php
-
-Yii::setAlias('@yii2elfinder', __DIR__ . '/../vendor/philippfrenzel/yii2elfinder/yii2elfinder/');
-
-```
-
 After that add into your controller the following function
 
 ```php
