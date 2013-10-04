@@ -1,6 +1,6 @@
 /*!
  * elFinder - file manager for web
- * Version 2.x_n (Nightly: b578531) (2013-09-09)
+ * Version 2.1 (Nightly: e9d48d2) (2013-09-05)
  * http://elfinder.org
  * 
  * Copyright 2009-2013, Studio 42
@@ -284,7 +284,6 @@
 }
 
 /* dir/file permissions and symlink markers */
-.elfinder-lock,
 .elfinder-perms,
 .elfinder-symlink {
 	position:absolute;
@@ -305,11 +304,6 @@
 
 /* write only */
 .elfinder-wo .elfinder-perms { background-position:0 -80px;}
-
-/* locked */
-.elfinder-lock {
-	background-position:0 -656px;
-}
 
 /* drag helper */
 .elfinder-drag-helper {
@@ -481,7 +475,6 @@
 	height:80px;
 	padding-bottom:2px;
 	cursor:default;
-	border:none;
 /*	overflow:hidden;*/
 /*	position:relative;*/
 }
@@ -518,7 +511,6 @@
 
 /* permissions/symlink markers */
 .elfinder-cwd-view-icons .elfinder-perms { bottom:4px; right:2px; }
-.elfinder-cwd-view-icons .elfinder-lock { top:-3px; right:-2px; }
 .elfinder-cwd-view-icons .elfinder-symlink { bottom:6px; left:0px; }
 
 /* icon/thumbnail */
@@ -660,11 +652,9 @@
 
 /* premissions/symlink marker */
 .elfinder-cwd-view-list .elfinder-perms, 
-.elfinder-cwd-view-list .elfinder-lock,
 .elfinder-cwd-view-list .elfinder-symlink { top:50%; margin-top:-6px; }
 /* markers in ltr/rtl enviroment */
 .elfinder-ltr .elfinder-cwd-view-list .elfinder-perms   { left:7px;  }
-.elfinder-ltr .elfinder-cwd-view-list .elfinder-lock    { left:9px; top:0px; }
 .elfinder-ltr .elfinder-cwd-view-list .elfinder-symlink { left:-7px; }
 
 /* file icon */
@@ -1078,14 +1068,9 @@
 /* permissions marker */
 .elfinder-navbar .elfinder-perms { top:50%; margin-top:-8px; }
 
-/* locked marker */
-.elfinder-navbar .elfinder-lock { top:-2px; }
-
 /* permissions/symlink markers ltr/rtl enviroment */
 .elfinder-ltr .elfinder-navbar .elfinder-perms   { left:  18px; }
 .elfinder-rtl .elfinder-navbar .elfinder-perms   { right: 18px; }
-.elfinder-ltr .elfinder-navbar .elfinder-lock    { left:  18px; }
-.elfinder-rtl .elfinder-navbar .elfinder-lock    { right: 18px; }
 .elfinder-ltr .elfinder-navbar .elfinder-symlink { left:  8px; }
 .elfinder-rtl .elfinder-navbar .elfinder-symlink { right: 8px; }
 
@@ -1530,8 +1515,6 @@ embed.elfinder-quicklook-preview-audio {
 .elfinder-button-icon-sort      { background-position: 0 -577px; }
 .elfinder-button-icon-rotate-r  { background-position: 0 -625px; }
 .elfinder-button-icon-rotate-l  { background-position: 0 -641px; }
-.elfinder-button-icon-netunmount { background-position: 0 -96px; }
-.elfinder-button-icon-pixlr     { background-position: 0 -673px; }
 
 /* button with dropdown menu*/
 .elfinder .elfinder-menubutton { overflow:visible; }
