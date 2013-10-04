@@ -51,6 +51,19 @@ class yii2elfinder extends elWidget
      */
     public function init()
     {
+
+        $request = Yii::$app->getRequest();
+        
+        if ($request instanceof Request) {
+            if ($request->enableCsrfValidation) {
+                $view = $this->getView();
+                $csrfTokenName = array('name' => 'csrf-var', 'content' => $request->csrfVar);
+                $csrfToken = array('name' => 'csrf-token', 'content' => $request->getCsrfToken());
+                $view->registerMetaTag($csrfToken, 'csrf-token');
+                $view->registerMetaTag($csrfTokenName, 'csrf-var');
+            }
+        }
+
         //checks for the element id
         if (!isset($this->options['id'])) {
             $this->options['id'] = $this->getId();
@@ -65,21 +78,9 @@ class yii2elfinder extends elWidget
         $this->clientOptions['url'] = Html::url(array($this->connectorRoute));
         
         //fetch language from app
-        $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);
-        
-        $request = Yii::$app->getRequest();
-        
-        if ($request instanceof Request) {
-            if ($request->enableCsrfValidation) {
-                $view = $this->getView();
-                $csrfTokenName = array('name' => 'csrf-var', 'content' => $request->csrfVar);
-                $csrfToken = array('name' => 'csrf-token', 'content' => $request->getCsrfToken());
-                $view->registerMetaTag($csrfToken, 'csrf-token');
-                $view->registerMetaTag($csrfTokenName, 'csrf-var');
-            }
-        }
+        $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);        
 
-        parent::init();
+        //parent::init();
     }
 
     /**
