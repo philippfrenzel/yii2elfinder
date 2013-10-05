@@ -52,7 +52,7 @@ class yii2elfinder extends elWidget
     public function init()
     {
 
-        $request = Yii::$app->getRequest();
+        /*$request = Yii::$app->getRequest();
         
         if ($request instanceof Request) {
             if ($request->enableCsrfValidation) {
@@ -62,7 +62,7 @@ class yii2elfinder extends elWidget
                 $view->registerMetaTag($csrfToken, 'csrf-token');
                 $view->registerMetaTag($csrfTokenName, 'csrf-var');
             }
-        }
+        }*/
 
         //checks for the element id
         if (!isset($this->options['id'])) {

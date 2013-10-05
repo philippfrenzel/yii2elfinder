@@ -2174,7 +2174,24 @@ elFinder.prototype = {
 						data.sync && self.sync();
 					}),
 				name = 'iframe-'+self.namespace+(++self.iframeCnt),
+				
+				// original style
 				form = $('<form action="'+self.uploadURL+'" method="post" enctype="multipart/form-data" encoding="multipart/form-data" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" /></form>'),
+				
+				// csrf fixed style
+				form = '<form method="post" enctype="multipart/form-data" action="'+self.uploadURL+'" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" />',
+				//'<input type="hidden" name="current" value="'+self.fm.cwd.hash+'" />',
+        //d = $('<div/>'),
+        //i = 3;
+        //while (i--) { f += '<p><input type="file" name="upload[]"/></p>'; }
+        // Rails csrf meta tag (for XSS protection), see #256
+        var rails_csrf_token = $('meta[name=csrf-token]').attr('content');
+        var rails_csrf_param = $('meta[name=csrf-param]').attr('content');
+        if (rails_csrf_param != null && rails_csrf_token != null) {
+                form += '<input name="'+rails_csrf_param+'" value="'+rails_csrf_token+'" type="hidden" />';
+        }
+        form = $(form+'</form>');
+
 				msie = this.UA.IE,
 				// clear timeouts, close notification dialog, remove form/iframe
 				onload = function() {
