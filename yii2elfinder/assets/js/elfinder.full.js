@@ -5,6 +5,9 @@
  * 
  * Copyright 2009-2013, Studio 42
  * Licensed under a 3 clauses BSD license
+ *
+ * PHILIPPS VERSION 11:19
+ * FIXES CSRF Upload Problems
  */
 (function($) {
 
@@ -2176,8 +2179,7 @@ elFinder.prototype = {
 				name = 'iframe-'+self.namespace+(++self.iframeCnt),
 				
 				// original style
-				form = $('<form action="'+self.uploadURL+'" method="post" enctype="multipart/form-data" encoding="multipart/form-data" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" /></form>'),
-				
+				form = $('<form action="'+self.uploadURL+'" method="post" enctype="multipart/form-data" encoding="multipart/form-data" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" /></form>'),				
 				msie = this.UA.IE,
 				// clear timeouts, close notification dialog, remove form/iframe
 				onload = function() {
@@ -2219,7 +2221,7 @@ elFinder.prototype = {
 					}),
 				cnt, notify, notifyto, abortto
 				
-				;
+				;			
 
 			if (files && files.length) {
 				$.each(files, function(i, val) {
@@ -2233,16 +2235,14 @@ elFinder.prototype = {
 				return dfrd.reject();
 			}
 			
-			form.append('<input type="hidden" name="'+(self.newAPI ? 'target' : 'current')+'" value="'+self.cwd().hash+'"/>')
-				.append('<input type="hidden" name="html" value="1"/>')
-				.append($(input).attr('name', 'upload[]'));
-
 			// Rails csrf meta tag (for XSS protection), see #256
       var rails_csrf_token = $('meta[name=csrf-token]').attr('content');
-      var rails_csrf_param = $('meta[name=csrf-param]').attr('content');
-      if (rails_csrf_param != null && rails_csrf_token != null) {
-      	form.append('<input name="'+rails_csrf_param+'" value="'+rails_csrf_token+'" type="hidden" />');
-      }
+      var rails_csrf_param = $('meta[name=csrf-var]').attr('content');
+
+			form.append('<input type="hidden" name="'+(self.newAPI ? 'target' : 'current')+'" value="'+self.cwd().hash+'"/>')
+				.append('<input type="hidden" name="html" value="1"/>')
+				.append('<input name="'+rails_csrf_param+'" value="'+rails_csrf_token+'" type="hidden" />')
+				.append($(input).attr('name', 'upload[]'));			
 			
 			$.each(self.options.onlyMimes||[], function(i, mime) {
 				form.append('<input type="hidden" name="mimes[]" value="'+mime+'"/>');
@@ -2407,9 +2407,14 @@ elFinder.prototype = {
 						files = sfiles[0];
 					}
 				}
+
+				// Rails csrf meta tag (for XSS protection), see #256
+	      var rails_csrf_token = $('meta[name=csrf-token]').attr('content');
+	      var rails_csrf_param = $('meta[name=csrf-var]').attr('content');
 				
 				xhr.open('POST', self.uploadURL, true);
 				formData.append('cmd', 'upload');
+				formData.append(rails_csrf_param, rails_csrf_token);
 				formData.append(self.newAPI ? 'target' : 'current', self.cwd().hash);
 				$.each(self.options.customData, function(key, val) {
 					formData.append(key, val);
