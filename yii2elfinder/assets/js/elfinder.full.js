@@ -2176,7 +2176,7 @@ elFinder.prototype = {
 				name = 'iframe-'+self.namespace+(++self.iframeCnt),
 				
 				// original style
-				form = $('<form action="'+self.uploadURL+'" method="post" enctype="multipart/form-data" encoding="multipart/form-data" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" /></form>'),
+				//form = $('<form action="'+self.uploadURL+'" method="post" enctype="multipart/form-data" encoding="multipart/form-data" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" /></form>'),
 				
 				// csrf fixed style
 				form = '<form method="post" enctype="multipart/form-data" action="'+self.uploadURL+'" target="'+name+'" style="display:none"><input type="hidden" name="cmd" value="upload" />',
