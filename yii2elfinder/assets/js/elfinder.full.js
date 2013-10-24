@@ -2414,7 +2414,10 @@ elFinder.prototype = {
 				
 				xhr.open('POST', self.uploadURL, true);
 				formData.append('cmd', 'upload');
+
+				// Rails csrf meta tag (for XSS protection), see #256
 				formData.append(rails_csrf_param, rails_csrf_token);
+				
 				formData.append(self.newAPI ? 'target' : 'current', self.cwd().hash);
 				$.each(self.options.customData, function(key, val) {
 					formData.append(key, val);
