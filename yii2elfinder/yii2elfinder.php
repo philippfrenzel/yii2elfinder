@@ -17,6 +17,7 @@ use Yii;
 use yii\base\Model;
 use yii\web\View;
 use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\helpers\Json;
 use yii\base\Widget as elWidget;
 
@@ -62,7 +63,7 @@ class yii2elfinder extends elWidget
            echo "connectorRoute must be set!";
            exit;
         }
-        $this->clientOptions['url'] = Html::url(array($this->connectorRoute));
+        $this->clientOptions['url'] = Url::to(array($this->connectorRoute));
         
         //fetch language from app
         $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);        
