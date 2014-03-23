@@ -27,7 +27,5 @@
 	"autoload": {
 		"psr-0": { "yii2elfinder\\": "/" }
 	},
-	"extra": {
-          "bootstrap": "yii2elfinder\\Extension"
-  }
+	"target-dir": "philippfrenzel/yii2elfinder"
 }
