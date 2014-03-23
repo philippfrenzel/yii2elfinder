@@ -25,7 +25,6 @@
 		"yiisoft/yii2": "*"
 	},
 	"autoload": {
-		"psr-0": { "yii2elfinder\\": "" }
-	},
-  "target-dir": "philippfrenzel/yii2elfinder"
+		"psr-4": { "yii2elfinder\\": "" }
+	}
 }
