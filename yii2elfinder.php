@@ -94,8 +94,7 @@ class yii2elfinder extends elWidget
         $view = $this->getView();
 
         /** @var \yii\web\AssetBundle $assetClass */
-        $assetClass = 'yii2elfinder\\CoreAsset';
-        $assetClass::register($view);
+        CoreAsset::register($view);
 
         $js = array();
         

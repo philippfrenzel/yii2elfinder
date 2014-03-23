@@ -26,5 +26,6 @@
 	},
 	"autoload": {
 		"psr-0": { "yii2elfinder\\": "" }
-	}
+	},
+  "target-dir": "philippfrenzel/yii2elfinder"
 }
