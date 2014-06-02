@@ -52,6 +52,8 @@ class yii2elfinder extends elWidget
      */
     public function init()
     {
+        parent::init();
+
         //checks for the element id
         if (!isset($this->options['id'])) {
             $this->options['id'] = $this->getId();
@@ -66,9 +68,7 @@ class yii2elfinder extends elWidget
         $this->clientOptions['url'] = Url::to(array($this->connectorRoute));
         
         //fetch language from app
-        $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);        
-
-        //parent::init();
+        $this->clientOptions['lang'] = substr(Yii::$app->language,0,2);                
     }
 
     /**
@@ -83,13 +83,9 @@ class yii2elfinder extends elWidget
 
     /**
     * Registers a specific dhtmlx widget and the related events
-    * @param string $name the name of the dhtmlx plugin
     */
     protected function registerPlugin()
     {
-        //for the js object generation, the first letter needs to be in upper case
-        $name = ucfirst($name);
-
         $id = $this->options['id'];
         $view = $this->getView();
 
