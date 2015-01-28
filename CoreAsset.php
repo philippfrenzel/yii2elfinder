@@ -12,7 +12,8 @@ use yii\web\AssetBundle;
 class CoreAsset extends AssetBundle
 {
     public $sourcePath = '@yii2elfinder/assets';
-    public $css = array(
+    
+    public $css = [
         'css/common.css'     ,
         'css/dialog.css'     ,
         'css/toolbar.css'    ,
@@ -24,8 +25,9 @@ class CoreAsset extends AssetBundle
         'css/commands.css'   ,
         'css/fonts.css'      ,
         'css/theme.css'      ,
-    );
-    public $js = array(
+    ];
+    
+    public $js = [
         "js/elFinder.js",
         "js/elFinder.version.js",
         "js/jquery.elfinder.js",
@@ -80,14 +82,9 @@ class CoreAsset extends AssetBundle
         "js/commands/sort.js",
         "js/commands/netmount.js",
         "js/i18n/elfinder.en.js" 
-    );
-    public $depends = array(
-        'yii\jui\CoreAsset',
-        'yii\jui\ThemeAsset',
-        'yii\jui\EffectAsset',
-        'yii\jui\ResizableAsset',
-        'yii\jui\DraggableAsset',
-        'yii\jui\DroppableAsset',
-        'yii\jui\SelectableAsset'
-    );
+    ];
+    
+    public $depends = [
+        'yii\jui\JuiAsset'
+    ];
 }
